@@ -1,0 +1,50 @@
+name: Branch Specific Job Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Enter branch name'
+        required: true
+        default: 'main'
+
+jobs:
+
+  validate-branch:
+    runs-on: ubuntu-latest
+
+    outputs:
+      selected_branch: ${{ steps.branch.outputs.branch }}
+
+    steps:
+      - name: Read branch input
+        id: branch
+        run: |
+          echo "Selected branch is:"
+          echo "${{ github.event.inputs.target_branch }}"
+
+          echo "branch=${{ github.event.inputs.target_branch }}" >> $GITHUB_OUTPUT
+
+  run-job:
+    needs: validate-branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-branch.outputs.selected_branch }}
+
+      - name: Verify checked out branch
+        run: |
+          echo "Current branch:"
+          git branch --show-current
+
+      - name: List files
+        run: |
+          ls -la
+
+      - name: Execute branch specific task
+        run: |
+          echo "Workflow running for branch:"
+          echo "${{ needs.validate-branch.outputs.selected_branch }}"
